@@ -1,0 +1,24 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: gableroux/unity3d:2019.3.12f1
+    steps:
+        - name: Checkout Project
+          uses: actions/checkout@v2
+
+        - name: Decrypt the license file
+          run: openssl aes-256-cbc -d -in .github/Unity_v2019.x.ulf.enc -k ${{ secrets.UNITY_LICENSE_DECRYPT_KEY }} >> .github/Unity_v2019.x.ulf
+
+        - name: Activate Unity
+          run: /opt/Unity/Editor/Unity -quit -batchmode -nographics -silent-crashes -logFile -manualLicenseFile .github/Unity_v2019.x.ulf || exit 0
+
+        - name: Create Unitypackage
+          run: /opt/Unity/Editor/Unity -quit -batchmode -nographics -projectPath ./UnityGitHubActions -exportPackage "Assets/Plugins" "../UnityGitHubActions-preview-0.${{ github.run_id }}.unitypackage"
+
+        - name: Archive Unitypackage Build
+          uses: actions/upload-artifact@v2
+          with:
+            name: UnityGitHubActions-preview-0.${{ github.run_id }}.unitypackage
+            path: ./UnityGitHubActions-preview-0.${{ github.run_id }}.unitypackage
